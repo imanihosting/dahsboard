@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 
@@ -20,6 +20,24 @@ const ChildminderDashboard = () => {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState(null);
+
+  const fetchDashboardData = useCallback(async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/dashboard/childminder`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (error) {
+      console.error('Error fetching dashboard data:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -28,52 +46,7 @@ const ChildminderDashboard = () => {
       return;
     }
     fetchDashboardData();
-  }, [navigate]);
-
-  const fetchDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const token = localStorage.getItem('token');
-
-      // First, check if profile exists
-      const profileRes = await fetch(`${process.env.REACT_APP_API_URL}/api/childminder/profile`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-
-      if (!profileRes.ok) {
-        // If profile doesn't exist, redirect to profile setup
-        if (profileRes.status === 404) {
-          navigate('/childminder/setup-profile');
-          return;
-        }
-        throw new Error('Failed to fetch profile');
-      }
-
-      // If profile exists, fetch all data
-      const [profileData, bookingsRes, messagesRes] = await Promise.all([
-        profileRes.json(),
-        fetch(`${process.env.REACT_APP_API_URL}/api/bookings/childminder`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        }),
-        fetch(`${process.env.REACT_APP_API_URL}/api/messages`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        })
-      ]);
-
-      const bookingsData = await bookingsRes.json();
-      const messagesData = await messagesRes.json();
-
-      setProfile(profileData);
-      setBookings(Array.isArray(bookingsData) ? bookingsData : []);
-      setMessages(Array.isArray(messagesData) ? messagesData : []);
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [navigate, fetchDashboardData]);
 
   if (loading) {
     return (

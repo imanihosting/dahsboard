@@ -24,13 +24,15 @@ const PrivateRoute = ({ children, requiredRole }) => {
   }
 
   // If user hasn't completed profile setup
-  if (!user.profileCompleted && window.location.pathname !== '/profile-setup') {
-    return <Navigate to="/profile-setup" replace />;
+  if (!user.has_profile && window.location.pathname !== '/setup-profile') {
+    return <Navigate to="/setup-profile" replace />;
   }
 
   // If user needs subscription (except for admin)
-  if (!user.subscription && user.role !== 'admin' && window.location.pathname !== '/subscription') {
-    return <Navigate to="/subscription" replace />;
+  if ((!user.subscription_status || user.subscription_status === 'inactive') && 
+      user.role !== 'admin' && 
+      window.location.pathname !== '/subscription/plans') {
+    return <Navigate to="/subscription/plans" replace />;
   }
 
   return children;

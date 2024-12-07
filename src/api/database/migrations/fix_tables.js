@@ -8,6 +8,7 @@ async function fixTables() {
 
     // Drop existing tables
     await client.query(`
+      DROP TABLE IF EXISTS subscriptions CASCADE;
       DROP TABLE IF EXISTS user_profiles CASCADE;
       DROP TABLE IF EXISTS users CASCADE;
     `);
@@ -25,6 +26,8 @@ async function fixTables() {
         subscription_status VARCHAR(50) DEFAULT 'inactive',
         subscription_id VARCHAR(255),
         subscription_end_date TIMESTAMP,
+        reset_token VARCHAR(255),
+        reset_token_expiry TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -52,6 +55,27 @@ async function fixTables() {
     `);
     console.log('Successfully created user_profiles table');
 
+    // Create subscriptions table
+    await client.query(`
+      CREATE TABLE subscriptions (
+        id SERIAL PRIMARY KEY,
+        user_id INTEGER NOT NULL,
+        stripe_subscription_id VARCHAR(255) UNIQUE,
+        stripe_customer_id VARCHAR(255),
+        plan_id VARCHAR(255),
+        status VARCHAR(50) DEFAULT 'inactive',
+        current_period_start TIMESTAMP,
+        current_period_end TIMESTAMP,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_user
+          FOREIGN KEY(user_id) 
+          REFERENCES users(id)
+          ON DELETE CASCADE
+      );
+    `);
+    console.log('Successfully created subscriptions table');
+
     // Create updated_at triggers
     await client.query(`
       CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -71,25 +95,11 @@ async function fixTables() {
         BEFORE UPDATE ON user_profiles
         FOR EACH ROW
         EXECUTE FUNCTION update_updated_at_column();
-    `);
 
-    // Insert a test user (optional)
-    await client.query(`
-      INSERT INTO users (
-        first_name, 
-        last_name, 
-        email, 
-        password, 
-        user_type, 
-        subscription_status
-      ) VALUES (
-        'Test',
-        'User',
-        'test@example.com',
-        '$2b$10$YourHashedPasswordHere',  -- Replace with actual hashed password
-        'parent',
-        'active'
-      ) ON CONFLICT (email) DO NOTHING;
+      CREATE TRIGGER update_subscriptions_updated_at
+        BEFORE UPDATE ON subscriptions
+        FOR EACH ROW
+        EXECUTE FUNCTION update_updated_at_column();
     `);
 
     await client.query('COMMIT');
@@ -103,4 +113,4 @@ async function fixTables() {
   }
 }
 
-module.exports = fixTables; 
+module.exports = fixTables;

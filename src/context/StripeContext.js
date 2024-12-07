@@ -3,15 +3,27 @@ import React, { createContext, useContext } from 'react';
 const StripeContext = createContext();
 
 export const StripeProvider = ({ children }) => {
-  // For demonstration purposes, we'll just provide basic functionality
-  const createCheckoutSession = async (priceId) => {
+  const createCheckoutSession = async (priceId, userId, email) => {
     try {
-      // In a real application, this would make an API call to your backend
-      // to create a Stripe checkout session
-      console.log('Creating checkout session for price:', priceId);
-      return {
-        url: '#' // Mock URL for demonstration
-      };
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/subscription/create-checkout-session`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify({
+          priceId,
+          userId,
+          email
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create checkout session');
+      }
+
+      const data = await response.json();
+      return data;
     } catch (error) {
       console.error('Error creating checkout session:', error);
       throw error;

@@ -1,158 +1,94 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const SubscriptionPlans = () => {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubscribe = async (planId) => {
+  const handleSubscribe = async (priceId) => {
+    setLoading(true);
+    setError('');
+
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/subscription/create-session`, {
+      console.log('Token:', token);
+      console.log('Price ID:', priceId);
+
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/api/subscription/create-checkout-session`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ planId })
+        body: JSON.stringify({ priceId })
       });
 
-      const data = await response.json();
+      console.log('Response status:', response.status);
 
-      if (response.ok) {
-        // Redirect to Stripe checkout
+      const data = await response.json();
+      console.log('Response data:', data);
+
+      if (response.ok && data.url) {
         window.location.href = data.url;
       } else {
-        console.error('Failed to create subscription session');
+        setError(data.message || 'Failed to create subscription session');
       }
-    } catch (error) {
-      console.error('Error:', error);
+    } catch (err) {
+      console.error('Subscription error:', err);
+      setError('Failed to process subscription. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-100 via-white to-purple-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-7xl mx-auto">
-        <div className="text-center">
-          <h2 className="text-3xl font-extrabold text-gray-900 sm:text-4xl">
-            Choose Your Subscription Plan
-          </h2>
-          <p className="mt-4 text-xl text-gray-600">
-            Select the plan that best fits your needs
-          </p>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl mx-auto">
+        <div className="text-center mb-8">
+          <h2 className="text-3xl font-bold text-gray-900">Choose Your Plan</h2>
+          <p className="mt-2 text-gray-600">Select a subscription plan to continue</p>
         </div>
 
-        <div className="mt-12 grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {/* Basic Plan */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="p-8">
-              <h3 className="text-xl font-semibold text-gray-900">Basic Plan</h3>
-              <p className="mt-4 text-gray-500">Perfect for getting started</p>
-              <p className="mt-8">
-                <span className="text-4xl font-extrabold text-gray-900">€9.99</span>
-                <span className="text-gray-500">/month</span>
-              </p>
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-lg">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-4">
+          {/* Monthly Plan */}
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Monthly Plan</h3>
+                <p className="text-gray-500">€4.99/month</p>
+              </div>
               <button
-                onClick={() => handleSubscribe('basic_plan')}
-                className="mt-8 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-150"
+                onClick={() => handleSubscribe('price_1QQ61DE8w0VgApNuoRjufjA4')}
+                disabled={loading}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
               >
-                Get Started
+                {loading ? 'Processing...' : 'Subscribe'}
               </button>
-            </div>
-            <div className="px-8 pb-8">
-              <ul className="space-y-4">
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Basic Profile</span>
-                </li>
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">5 Bookings per month</span>
-                </li>
-              </ul>
             </div>
           </div>
 
-          {/* Premium Plan */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border-2 border-indigo-500">
-            <div className="p-8">
-              <h3 className="text-xl font-semibold text-gray-900">Premium Plan</h3>
-              <p className="mt-4 text-gray-500">Most popular choice</p>
-              <p className="mt-8">
-                <span className="text-4xl font-extrabold text-gray-900">€19.99</span>
-                <span className="text-gray-500">/month</span>
-              </p>
+          {/* Yearly Plan */}
+          <div className="bg-white p-6 rounded-lg shadow-md border-2 border-indigo-500">
+            <div className="flex justify-between items-center">
+              <div>
+                <h3 className="text-lg font-medium text-gray-900">Yearly Plan</h3>
+                <p className="text-gray-500">€49.99/year</p>
+                <p className="text-sm text-indigo-600">Save over 16%</p>
+              </div>
               <button
-                onClick={() => handleSubscribe('premium_plan')}
-                className="mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white py-3 px-4 rounded-lg hover:from-indigo-700 hover:to-purple-700 transition duration-150"
+                onClick={() => handleSubscribe('price_1QS2edE8w0VgApNu5txn9m8c')}
+                disabled={loading}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 disabled:opacity-50"
               >
-                Subscribe Now
+                {loading ? 'Processing...' : 'Subscribe'}
               </button>
-            </div>
-            <div className="px-8 pb-8">
-              <ul className="space-y-4">
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Enhanced Profile</span>
-                </li>
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Unlimited Bookings</span>
-                </li>
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Priority Support</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Business Plan */}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-            <div className="p-8">
-              <h3 className="text-xl font-semibold text-gray-900">Business Plan</h3>
-              <p className="mt-4 text-gray-500">For professional childminders</p>
-              <p className="mt-8">
-                <span className="text-4xl font-extrabold text-gray-900">€29.99</span>
-                <span className="text-gray-500">/month</span>
-              </p>
-              <button
-                onClick={() => handleSubscribe('business_plan')}
-                className="mt-8 w-full bg-indigo-600 text-white py-3 px-4 rounded-lg hover:bg-indigo-700 transition duration-150"
-              >
-                Get Started
-              </button>
-            </div>
-            <div className="px-8 pb-8">
-              <ul className="space-y-4">
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">All Premium Features</span>
-                </li>
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Business Analytics</span>
-                </li>
-                <li className="flex items-center">
-                  <svg className="h-5 w-5 text-green-500" fill="none" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" viewBox="0 0 24 24" stroke="currentColor">
-                    <path d="M5 13l4 4L19 7"></path>
-                  </svg>
-                  <span className="ml-3 text-gray-700">Dedicated Support</span>
-                </li>
-              </ul>
             </div>
           </div>
         </div>

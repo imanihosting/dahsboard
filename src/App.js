@@ -5,6 +5,7 @@ import Register from './pages/auth/Register';
 import ParentDashboard from './pages/dashboard/ParentDashboard';
 import ChildminderDashboard from './pages/dashboard/ChildminderDashboard';
 import SubscriptionPlans from './pages/subscription/SubscriptionPlans';
+import SubscriptionSuccess from './pages/subscription/SubscriptionSuccess';
 
 const App = () => {
   return (
@@ -16,6 +17,8 @@ const App = () => {
         <Route path="/dashboard" element={<ParentDashboard />} />
         <Route path="/childminder/dashboard" element={<ChildminderDashboard />} />
         <Route path="/subscription/plans" element={<SubscriptionPlans />} />
+        <Route path="/subscription/success" element={<SubscriptionSuccess />} />
+        <Route path="/dashboard/parent" element={<ParentDashboard />} />
       </Routes>
     </Router>
   );

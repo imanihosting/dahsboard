@@ -34,30 +34,17 @@ const Register = () => {
     setLoading(true);
     setError('');
 
+    // Create registration data with required user_type
+    const registrationData = {
+      first_name: formData.first_name,
+      last_name: formData.last_name,
+      email: formData.email,
+      phone: formData.phone,
+      password: formData.password,
+      user_type: formData.user_type || 'parent', // Set default if not specified
+    };
+
     try {
-      // Create the registration payload
-      const registrationData = {
-        first_name: formData.first_name,
-        last_name: formData.last_name,
-        email: formData.email,
-        phone: formData.phone,
-        password: formData.password,
-        role: formData.user_type,
-      };
-
-      // Add childminder specific fields only if user_type is childminder
-      if (formData.user_type === 'childminder') {
-        registrationData.bio = formData.bio || '';
-        registrationData.hourly_rate = formData.hourly_rate || '';
-        registrationData.years_experience = formData.years_experience || '';
-        registrationData.garda_vetting = formData.garda_vetting || false;
-        registrationData.available_from = formData.available_from || '';
-        registrationData.available_to = formData.available_to || '';
-        registrationData.max_children = formData.max_children || '';
-      }
-
-      console.log('Registration attempt:', registrationData);
-
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: {
@@ -67,13 +54,13 @@ const Register = () => {
       });
 
       const data = await response.json();
+      console.log('Registration response:', data);
 
       if (response.ok) {
         localStorage.setItem('token', data.token);
-        // After successful registration, redirect to subscription
         navigate('/subscription/plans');
       } else {
-        setError(data.message || 'Registration failed. Please try again.');
+        setError(data.message || 'Registration failed');
       }
     } catch (err) {
       console.error('Registration error:', err);

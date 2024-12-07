@@ -20,44 +20,45 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError('');
+    setLoading(true);
 
     try {
       const response = await fetch(`${process.env.REACT_APP_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-        }),
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
 
-      if (response.ok) {
-        localStorage.setItem('token', data.token);
-        
-        // Check if subscription exists
-        if (data.user.subscription_status === 'active') {
-          // If subscribed, go to dashboard
-          if (data.user.role === 'childminder') {
-            navigate('/childminder/dashboard');
-          } else {
-            navigate('/dashboard');
-          }
-        } else {
-          // If not subscribed, go to subscription page
-          navigate('/subscription/plans');
-        }
-      } else {
-        setError(data.message || 'Invalid email or password');
+      if (!response.ok) {
+        throw new Error(data.message || 'Login failed');
       }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Network error. Please try again.');
+
+      // Store token and user info
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('user_type', data.user.user_type);
+      localStorage.setItem('user_id', data.user.id);
+
+      // Determine redirect based on user type and subscription status
+      const dashboardPath = data.user.user_type === 'parent' ? '/dashboard/parent' : '/dashboard/childminder';
+      
+      // Only redirect to subscription if user is new and hasn't subscribed
+      if (data.user.subscription_status === 'inactive') {
+        // Store the intended dashboard path for after subscription
+        localStorage.setItem('redirect_after_subscription', dashboardPath);
+        navigate('/subscription/plans');
+      } else {
+        // Direct to dashboard if already subscribed
+        navigate(dashboardPath);
+      }
+
+    } catch (error) {
+      console.error('Login error:', error);
+      setError(error.message || 'Failed to login. Please try again.');
     } finally {
       setLoading(false);
     }

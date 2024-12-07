@@ -3,8 +3,11 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const { pool } = require('./api/config/db');
+const pool = require('./api/database/db');
 const path = require('path');
+const addSubscriptionColumns = require('./api/database/migrations/add_subscription_columns');
+const createTables = require('./api/database/migrations/create_tables');
+const fixTables = require('./api/database/migrations/fix_tables');
 
 const app = express();
 
@@ -25,12 +28,14 @@ const authRoutes = require('./api/routes/auth');
 const stripeRoutes = require('./api/routes/stripe');
 const subscriptionRoutes = require('./api/routes/subscription');
 const webhookRoutes = require('./api/routes/webhook');
+const dashboardRoutes = require('./api/routes/dashboard');
 
 // Use routes
 app.use('/api/auth', authRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/stripe', webhookRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   // Serve static files from the React app
@@ -47,7 +52,17 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
-const PORT = process.env.PORT || 5001;
+// Run migrations
+(async () => {
+  try {
+    await fixTables();
+    console.log('Database setup completed');
+  } catch (error) {
+    console.error('Database setup error:', error);
+  }
+})();
+
+const PORT = process.env.PORT || 5501;
 
 // Start server with confirmation message
 app.listen(PORT, () => {

@@ -149,50 +149,47 @@ router.post('/login', async (req, res) => {
 
     // Check if user exists
     const userResult = await pool.query(
-      'SELECT id, email, password_hash, first_name, last_name, user_type FROM users WHERE email = $1',
+      'SELECT id, email, password, first_name, user_type, subscription_status FROM users WHERE email = $1',
       [email]
     );
 
     if (userResult.rows.length === 0) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
     const user = userResult.rows[0];
 
     // Verify password
-    const validPassword = await bcrypt.compare(password, user.password_hash);
+    const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res.status(401).json({ error: 'Invalid credentials' });
+      return res.status(401).json({ message: 'Invalid credentials' });
     }
 
-    // Generate JWT token
+    // Generate token
     const token = jwt.sign(
       { 
-        id: user.id,
-        email: user.email,
-        user_type: user.user_type
-      },
+        id: user.id, 
+        email: user.email, 
+        user_type: user.user_type 
+      }, 
       process.env.JWT_SECRET,
       { expiresIn: '24h' }
     );
 
+    // Return user info and token
     res.json({
       token,
       user: {
         id: user.id,
         email: user.email,
         first_name: user.first_name,
-        last_name: user.last_name,
-        user_type: user.user_type
+        user_type: user.user_type,
+        subscription_status: user.subscription_status
       }
     });
-
-  } catch (err) {
-    console.error('Login error:', err);
-    res.status(500).json({ 
-      error: 'Server error during login',
-      details: process.env.NODE_ENV === 'development' ? err.message : undefined
-    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
